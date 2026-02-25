@@ -1,20 +1,20 @@
-name: Auto Run Bot
+name: Auto Config Sender
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: '*/30 * * * *' # هر ۳۰ دقیقه (گیتهاب برای ۵ دقیقه محدودیت‌هایی دارد، ۳۰ مطمئن‌تر است)
   workflow_dispatch:
 
 jobs:
-  run:
+  run-script:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install requests
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
         run: pip install requests
-
-      - name: Run bot
+      - name: Run Bot
         run: python main.py
