@@ -1,10 +1,11 @@
+import os
 import requests
 
-BOT_TOKEN = "8551688721:AAHyFlOL5WZYjgAuswz81X_SCi898k1DOUM"
-CHAT_ID = "@jdkdjjdjkf"
+TOKEN = os.getenv("8551688721:AAHyFlOL5WZYjgAuswz81X_SCi898k1DOUM")
+CHAT_ID = os.getenv("@jdkdjjdjkf")
 
 def send_message(text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     data = {
         "chat_id": CHAT_ID,
         "text": text
@@ -13,7 +14,8 @@ def send_message(text):
     print(response.text)
 
 def main():
-    send_message("🔥 ربات با موفقیت کار کرد!")
+    print("Bot started...")
+    send_message("✅ ربات با موفقیت اجرا شد!")
 
 if name == "main":
     main()
