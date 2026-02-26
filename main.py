@@ -2,32 +2,23 @@ import requests
 import os
 import time
 import base64
-import urllib.parse
 
-# --- تنظیمات اختصاصی تو ---
+# --- تنظیمات اختصاصی ---
 BOT_TOKEN = "8551688721:AAHyFlOL5WZYjgAuswz81X_SCi898k1DOUM"
 CHAT_ID = "@jdkdjjdjkf"
-MY_NAME = "jdkdjjdjkf" # اسمی که ته کانفیگ‌ها میفته
+MY_NAME = "jdkdjjdjkf"
 HISTORY_FILE = "sent_configs.txt"
 
+# منابع کامل برای همه پروتکل‌ها
 SOURCES = [
     "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/base64/mix",
     "https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/All_Configs_Sub.txt",
     "https://raw.githubusercontent.com/soroushmhm/v2ray-config-collector/main/protocols/vless",
+    "https://raw.githubusercontent.com/soroushmhm/v2ray-config-collector/main/protocols/vmess",
+    "https://raw.githubusercontent.com/soroushmhm/v2ray-config-collector/main/protocols/trojan",
     "https://raw.githubusercontent.com/ts-sf/v2ray-config-collector/main/sub/mix",
     "https://raw.githubusercontent.com/LalatinaHub/Mineral/master/result/nodes"
 ]
-
-def rename_config(config, new_name):
-    try:
-        # این بخش اسم کانفیگ رو بعد از هشتگ (#) عوض می‌کنه
-        if "#" in config:
-            base_part = config.split("#")[0]
-            return f"{base_part}#{new_name}"
-        else:
-            return f"{config}#{new_name}"
-    except:
-        return config
 
 def get_history():
     if os.path.exists(HISTORY_FILE):
@@ -39,24 +30,56 @@ def save_history(config_hash):
     with open(HISTORY_FILE, "a") as f:
         f.write(config_hash + "\n")
 
+def get_info(config):
+    conf_upper = config.upper()
+    info = {"country": "بین‌المللی", "flag": "🌐", "hashtag": "#International"}
+    
+    # تشخیص کشور و تنظیم هشتگ اختصاصی
+    if any(x in conf_upper for x in ["IRAN", " IR ", "|IR|", "MCI", "IRANCELL", "HAMRAH"]):
+        info = {"country": "ایران", "flag": "🇮🇷", "hashtag": "#ایران #Iran"}
+    elif any(x in conf_upper for x in ["GERMANY", " DE ", "|DE|"]):
+        info = {"country": "آلمان", "flag": "🇩🇪", "hashtag": "#آلمان #Germany"}
+    elif any(x in conf_upper for x in ["UNITED STATES", " US ", "|US|", "USA"]):
+        info = {"country": "آمریکا", "flag": "🇺🇸", "hashtag": "#آمریکا #USA"}
+    elif any(x in conf_upper for x in ["TURKEY", " TR ", "|TR|"]):
+        info = {"country": "ترکیه", "flag": "🇹🇷", "hashtag": "#ترکیه #Turkey"}
+    elif any(x in conf_upper for x in ["FINLAND", " FI ", "|FI|"]):
+        info = {"country": "فنلاند", "flag": "🇫🇮", "hashtag": "#فنلاند #Finland"}
+    
+    return info
+
+def rename_config(config, new_name):
+    if "#" in config:
+        base_part = config.split("#")[0]
+        return f"{base_part}#{new_name}"
+    return f"{config}#{new_name}"
+
 def send_to_telegram(config):
-    # تغییر اسم کانفیگ به اسم کانال تو
+    country_info = get_info(config)
     named_config = rename_config(config, MY_NAME)
     
-    if config.startswith("vless"): title = "⚡️ کانفیگ ویژه‌ی VLESS"
-    elif config.startswith("vmess"): title = "💥 کانفیگ جدید VMESS"
-    elif config.startswith("trojan"): title = "🛡 کانفیگ اختصاصی TROJAN"
-    else: title = "🚀 کانفیگ جدید سیستم"
+    # تعیین پروتکل و هشتگ مربوطه
+    if config.startswith("vless"):
+        proto, p_hash = "⚡️ VLESS", "#VLESS"
+    elif config.startswith("vmess"):
+        proto, p_hash = "💥 VMESS", "#VMESS"
+    elif config.startswith("trojan"):
+        proto, p_hash = "🛡 TROJAN", "#Trojan"
+    else:
+        proto, p_hash = "🚀 CONFIG", "#V2ray"
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     
+    # چیدمان با هشتگ‌های پربازدید برای بالا رفتن آمار
     text = (
-        f"{title}\n"
+        f"━━━━━━━━━━━━━━━\n"
+        f"{proto} | {country_info['flag']} {country_info['country']}\n"
         f"━━━━━━━━━━━━━━━\n\n"
         f"`{named_config}`\n\n"
         f"✈️\n\n"
-        f"✨ کـانفیگ‌های بیـشتر: {CHAT_ID} ✨\n"
-        f"⭐️ به دوستات هم بفرست ⭐️"
+        f"✨ کـانفیگ‌های بیـشتر: {CHAT_ID} ✨\n\n"
+        f"{p_hash} {country_info['hashtag']}\n"
+        f"#فیلترشکن #رایگان #VPN #Free_VPN"
     )
     
     payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
@@ -67,7 +90,6 @@ def send_to_telegram(config):
 if __name__ == "__main__":
     history = get_history()
     new_count = 0
-    
     for url in SOURCES:
         try:
             res = requests.get(url, timeout=15)
@@ -84,7 +106,7 @@ if __name__ == "__main__":
                         send_to_telegram(conf)
                         save_history(conf)
                         new_count += 1
-                        time.sleep(3)
-                        if new_count >= 10: break
-                if new_count >= 10: break
+                        time.sleep(4) # کمی مکث بیشتر برای امنیت
+                        if new_count >= 15: break
+                if new_count >= 15: break
         except: continue
